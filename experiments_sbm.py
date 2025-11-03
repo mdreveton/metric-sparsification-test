@@ -26,7 +26,7 @@ pin = 5
 pout = 1 
 B = (pin-pout) * np.eye( n_clusters ) + pout * np.ones( n_clusters )
 asymptotic_rate = np.log(n) / n 
-B = np.array( [ [1,2],[2,4] ])
+B = np.array( [ [1,2],[2,8] ])
 
 
 G = ig.Graph.SBM( np.sum(block_sizes), B * asymptotic_rate, block_sizes, directed=False, loops=False)

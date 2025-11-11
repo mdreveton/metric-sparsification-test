@@ -349,7 +349,7 @@ def sum_inverse_fraction(n):
 
 
 
-def testingNearestNeighborCost( G, rho_range, n_samples, source_vertices, gamma_shape, verbose = False ):
+def testingNearestNeighborCost( G, asymptotic_rate, rho_range, n_samples, source_vertices, gamma_shape, verbose = False ):
 
     result = [ ]
     costs = [ ]
@@ -365,7 +365,8 @@ def testingNearestNeighborCost( G, rho_range, n_samples, source_vertices, gamma_
 
     for rho in rho_range:
         logGamma = - np.log( sp.stats.gamma.rvs( size = 5000, a = gamma_shape ) )
-        rescaled_costs = [ np.log( n ) * ( cost - 1 / (2 * rho ) ) for cost in costs ]
+        #gumbel = sp.stats.gumbel_r.rvs( size = 5000 )
+        rescaled_costs = [ rho * asymptotic_rate * cost - np.log(n) / 2 for cost in costs ]
         result.append( sp.stats.ks_2samp(rescaled_costs, logGamma ).statistic )
     
     return np.asarray( result )
@@ -390,15 +391,17 @@ def samplingCosts( G, n_samples, source_vertices, target_vertices, verbose = Tru
     return costs
 
 
-def testingDistributionalLimit( G, rho_range, n_samples, source_vertices, target_vertices, c, verbose = False ):
+def testingDistributionalLimit( G, rho_range, n_samples, source_vertices, target_vertices, c, verbose = False, shift_source = 1, shift_target =1 ):
 
     result = [ ]
     costs = samplingCosts( G, n_samples, source_vertices, target_vertices, verbose = verbose )
 
     for rho in rho_range:
-        gumbels = sp.stats.gumbel_r.rvs( size = 5000 ) + sp.stats.gumbel_r.rvs( size = 5000 ) - sp.stats.gumbel_r.rvs( size = 5000 ) - c * np.ones( 5000 )
+        #gumbels = sp.stats.gumbel_r.rvs( size = 5000 ) + sp.stats.gumbel_r.rvs( size = 5000 ) - sp.stats.gumbel_r.rvs( size = 5000 ) - c * np.ones( 5000 )
+        limitDistribution = - np.log( sp.stats.gamma.rvs( size = 5000, a = shift_source ) ) - np.log( sp.stats.gamma.rvs( size = 5000, a = shift_target ) ) - sp.stats.gumbel_r.rvs( size = 5000 ) - c * np.ones( 5000 )
+        # if shift_source = shift_target = 1, then limitDistribution is gumbel1 + gumbel2 - gumbel3 - c
         rescaled_costs = [  ( rho * cost - np.log( G.vcount( ) ) ) for cost in costs ]
-        result.append( sp.stats.ks_2samp(rescaled_costs, gumbels ).statistic )
+        result.append( sp.stats.ks_2samp(rescaled_costs, limitDistribution ).statistic )
     
     return np.asarray( result )
 
@@ -410,8 +413,7 @@ def testingLimit( G, rho_range, n_samples, source_vertices, target_vertices, ver
     costs = samplingCosts( G, n_samples, source_vertices, target_vertices, verbose = verbose )
 
     for rho in rho_range:
-        #gumbels = sp.stats.gumbel_r.rvs( size = 5000 ) + sp.stats.gumbel_r.rvs( size = 5000 ) - sp.stats.gumbel_r.rvs( size = 5000 ) - c * np.ones( 5000 )
-        rescaled_costs = [ ( rho * cost - 1 ) for cost in costs ]
+        rescaled_costs = [ ( rho * cost / np.log(n) - 1 ) for cost in costs ]
         result.append( np.mean( rescaled_costs ) )
     
     return np.asarray( result )
